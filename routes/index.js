@@ -122,8 +122,8 @@ exports.isLoggedIn = function (req, res, next) {
 
 exports.logout = function (req, res, next) {
   req.session.loggedIn = 0
-  req.session.destroy(function() { 
-    return res.redirect('/')  
+  req.session.destroy(function() {
+    return res.redirect('/')
   })
 }
 
@@ -148,6 +148,44 @@ function parse(todo) {
   }
   return t;
 }
+
+exports.create_second = function (req, res, next) {
+  // console.log('req.body: ' + JSON.stringify(req.body));
+
+  var item = req.body.content;
+  var imgRegex = /\!\[alt text\]\((http.*)\s\".*/;
+  if (typeof (item) == 'string' && item.match(imgRegex)) {
+    var url = item.match(imgRegex)[1];
+    console.log('found img: ' + url);
+
+    exec('identify ' + url, function (err, stdout, stderr) {
+      console.log(err);
+      if (err !== null) {
+        console.log('Error (' + err + '):' + stderr);
+      }
+    });
+
+  } else {
+    item = parse(item);
+  }
+
+  new Todo({
+    content: item,
+    updated_at: Date.now(),
+  }).save(function (err, todo, count) {
+    if (err) return next(err);
+
+    /*
+    res.setHeader('Data', todo.content.toString('base64'));
+    res.redirect('/');
+    */
+
+    res.setHeader('Location', '/');
+    res.status(302).send(todo.content.toString('base64'));
+
+    // res.redirect('/#' + todo.content.toString('base64'));
+  });
+};
 
 exports.create = function (req, res, next) {
   // console.log('req.body: ' + JSON.stringify(req.body));
